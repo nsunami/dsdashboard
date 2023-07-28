@@ -15,21 +15,18 @@ eur_pal <- list(
 # Preparing login ==========
 # Login credentials
 users <- tibble::tribble(
-  ~username,     ~password,      ~permission, ~name,
-  "admin",       "z9g?iiAdFc5s", "admin",     "Admin",
+  ~username,                ~password,                    ~permission, ~name,
+  Sys.getenv("ADMIN_USER"), Sys.getenv("ADMIN_PASSWORD"), "admin",     "Admin",
 )
 # Login tab
-# login_tab <- nav_panel(
-#   title = icon("lock"), 
-#   value = "login", 
-#   shinyauthr::loginUI("login")
-# )
+login_panel <- nav_panel(
+  title = icon("lock"),
+  value = "login",
+  shinyauthr::loginUI("login")
+)
 
 
 dashboard <- function(...) {
-
-  
-  
   # Load requests data
   requests <- load_data()
   
@@ -42,50 +39,62 @@ dashboard <- function(...) {
     dplyr::left_join(faculties, by = "faculty") |>
     dplyr::select(-date)
   
-  
   # Get the unique values from all the variables  
   uniques <- requests |>
     purrr::map(~unique(.))
   date_range <- c(min(uniques$date), max(uniques$date))
   
-  ui <- page_navbar(
-    title = "DS Dashboard",
-    theme = bs_theme(version = 5) |>
-      bs_theme_update(primary = "#0c8066",
-                      secondary = "#002328", 
-                      info = "#e3dad8",
-                      font_scale = NULL, 
-                      bootswatch = "cosmo"),
-    nav_panel(title = "Overview",
-              h1("2022 Requests"),
-              layout_columns(
-                bslib::value_box(
-                  title = "Total",
-                  value = textOutput("total_requests"),
-                  showcase = bsicons::bs_icon("check2-all")
-                ),
-                bslib::value_box(
-                  title = "Ave. weekly requests",
-                  value = textOutput("weekly_average"),
-                  showcase = bsicons::bs_icon("speedometer2")
-                ),
-                bslib::value_box(
-                  title = "Busiest month",
-                  value = textOutput("busiest_month"),
-                  showcase = bsicons::bs_icon("stack")
-                )
-              ),
-              layout_columns(
-                card(
-                  plotly::plotlyOutput("requests_over_time"))
-              )),
-    nav_panel(title = "Details",
-              weekly_bar_UI("weeklyBar",
-                            date_range = date_range,
-                            uniques = uniques,
-                            requests = requests)
+  # UI Component - Overview Panel ====
+  overview_panel <- nav_panel(
+    title = "Overview",
+    h1("2022 Requests"),
+    layout_columns(
+      bslib::value_box(
+        title = "Total",
+        value = textOutput("total_requests"),
+        showcase = bsicons::bs_icon("check2-all")
+      ),
+      bslib::value_box(
+        title = "Ave. weekly requests",
+        value = textOutput("weekly_average"),
+        showcase = bsicons::bs_icon("speedometer2")
+      ),
+      bslib::value_box(
+        title = "Busiest month",
+        value = textOutput("busiest_month"),
+        showcase = bsicons::bs_icon("stack")
+      )
+    ),
+    layout_columns(
+      card(
+        plotly::plotlyOutput("requests_over_time"))
     )
   )
+  
+  # UI Component - Details Panel ====
+  details_panel <- nav_panel(
+    title = "Details",
+    weekly_bar_UI("weeklyBar",
+                  date_range = date_range,
+                  uniques = uniques,
+                  requests = requests)
+  )
+  
+  
+  # Put together the whole UI ====
+  ui <- page_navbar(
+    id = "navbar",
+    title = "DS Dashboard",
+    theme = bs_theme(version = 5) |>
+      bs_theme_update(
+        primary = "#0c8066",
+        secondary = "#002328", 
+        info = "#e3dad8",
+        font_scale = NULL, 
+        bootswatch = "cosmo"
+      ),
+    login_panel,
+    )
   
   server <- function(input, output, session) {
     
@@ -107,15 +116,16 @@ dashboard <- function(...) {
       # if user logs in successfully
       if(credentials()$user_auth) { 
         # remove the login tab
-        removeTab("tabs", "login")
+        removeTab("navbar", "login")
         # add home tab 
-        appendTab("tabs", home_tab, select = TRUE)
+        appendTab("navbar", overview_panel, select = TRUE)
       }
     })
     
-    
+    # Theming =======
     # bs_themer()
     
+    # Weekly bar server function ====
     weekly_bar_server("weeklyBar", requests)
     # Total Requests
     output$total_requests <- renderText({
@@ -124,7 +134,7 @@ dashboard <- function(...) {
       paste0(total_requests, " requests")
     })
     
-    # Weekly average
+    # Calculating weekly average ====
     output$weekly_average <- renderText({
       weekly_average <- requests |>
         dplyr::count(week) |>
@@ -134,9 +144,8 @@ dashboard <- function(...) {
       scales::label_number(suffix = " per week")(weekly_average)
     })
     
-    # Busiest Month
+    # Busiest Month ====
     output$busiest_month <- renderText({
-      
       requests |>
         dplyr::mutate(month = lubridate::floor_date(date, "month")) |>
         dplyr::count(month) |>
@@ -144,12 +153,10 @@ dashboard <- function(...) {
         dplyr::slice(1) |>
         dplyr::pull(month) |>
         format("%B")
-      
     })
     
-    
+    # Plotting requests over time ====
     output$requests_over_time <- plotly::renderPlotly({
-      
       requests |>
         dplyr::group_by(week) |> 
         dplyr::count() |>
@@ -159,7 +166,7 @@ dashboard <- function(...) {
           y = ~n,
           marker = list(color = eur_pal$bright_green),
           hovertemplate = "In the week of %{x}, we had %{y:.0f} requests<extra></extra>"
-          ) |> 
+        ) |> 
         plotly::layout(yaxis = list(title = FALSE,
                                     fixedrange = TRUE)) |> 
         # Horizontal y-axis label 
