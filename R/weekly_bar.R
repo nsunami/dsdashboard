@@ -1,8 +1,6 @@
 weekly_bar_UI <- function(id, date_range, uniques, requests) {
   ## Render UI
-  layout_column_wrap(
-    width = NULL,
-    # style = htmltools::css(grid_template_columns = "1fr 2fr"),
+  layout_columns(
     style = "grid-template-columns: 280px 1fr",
     card(
       # Dates - Input range 
