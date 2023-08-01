@@ -38,7 +38,7 @@ dashboard <- function(...) {
   requests <- load_data()
   
   # Load faculty 
-  faculties <- read.csv2(here("data/researchers_by_faculty.csv"))
+  faculties <- read.csv2(here("data/public/researchers_by_faculty.csv"))
   
   # Prepare the summary table
   summary_year <- requests |>
