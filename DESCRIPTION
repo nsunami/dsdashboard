@@ -1,0 +1,19 @@
+Package: dsdashboard
+Title: Dashboarding EUR Data Steward Requests Data
+Version: 0.0.0.9000
+Authors@R: 
+    person("Nami", "Sunami", , "nsunami@pm.me", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-5482-8370"))
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
+Imports: 
+    bslib,
+    dplyr,
+    htmltools,
+    lubridate,
+    magrittr,
+    plotly,
+    purrr
