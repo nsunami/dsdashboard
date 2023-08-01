@@ -1,7 +1,7 @@
 # Load requests dataset
-load_data <- function(path = "data/2022_requests.csv"){
+load_data <- function(path = "data/public/2022_requests_without_names_and_notes.csv"){
   ## Load dataset
-  requests_raw <- readr::read_csv2(here::here("data/2022_requests.csv"))
+  requests_raw <- readr::read_csv2(here::here(path))
   
   # Fix date 
   requests_raw <- requests_raw |> 
@@ -20,9 +20,10 @@ load_data <- function(path = "data/2022_requests.csv"){
   requests <- requests_raw |> 
     dplyr::transmute(date = date_coalesce,
                      faculty = Faculty,
-                     requester = `Name researcher`,
+                     # requester = `Name researcher`,
                      req_type = `Type of request`,
-                     notes = Notes)
+                     # notes = Notes
+                     )
   
   ## Date to date datatype
   # requests <- requests %>% 
