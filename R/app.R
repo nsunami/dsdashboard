@@ -26,7 +26,7 @@ users <- tibble::tribble(
   Sys.getenv("ADMIN_USER"), Sys.getenv("ADMIN_PASSWORD"), "admin",     "Admin",
 )
 # Login tab
-login_panel <- nav_panel(
+login_panel <- bslib::nav_panel(
   title = icon("lock"),
   value = "login",
   shinyauthr::loginUI("login")
@@ -52,7 +52,7 @@ dashboard <- function(...) {
   date_range <- c(min(uniques$date), max(uniques$date))
   
   # UI Component - Overview Panel ====
-  overview_panel <- nav_panel(
+  overview_panel <- bslib::nav_panel(
     title = "Overview",
     h1("2022 Requests"),
     layout_columns(
@@ -79,7 +79,7 @@ dashboard <- function(...) {
   )
   
   # UI Component - Details Panel ====
-  details_panel <- nav_panel(
+  details_panel <- bslib::nav_panel(
     title = "Details",
     weekly_bar_UI("weeklyBar",
                   date_range = date_range,
@@ -105,7 +105,7 @@ dashboard <- function(...) {
     } else {
       login_panel
     },
-    )
+  )
   
   server <- function(input, output, session) {
     
