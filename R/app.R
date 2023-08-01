@@ -69,6 +69,7 @@ dashboard <- function(...) {
       bslib::value_box(
         title = "Busiest month",
         value = textOutput("busiest_month"),
+        textOutput("busiest_month_requests"),
         showcase = bsicons::bs_icon("stack")
       )
     ),
@@ -156,14 +157,27 @@ dashboard <- function(...) {
     })
     
     # Busiest Month ====
+    monthly_df <- requests |>
+      dplyr::mutate(month = lubridate::floor_date(date, "month")) |>
+      dplyr::count(month) |>
+      dplyr::arrange(desc(n)) 
+    
     output$busiest_month <- renderText({
-      requests |>
-        dplyr::mutate(month = lubridate::floor_date(date, "month")) |>
-        dplyr::count(month) |>
-        dplyr::arrange(desc(n)) |>
+      monthly_df |>
         dplyr::slice(1) |>
         dplyr::pull(month) |>
         format("%B")
+    })
+    
+    output$busiest_month_requests <- renderText({
+      num_requests <- monthly_df |>
+        dplyr::slice(1) |>
+        dplyr::pull(n)
+      paste0(
+        "with ",
+        num_requests,
+        " requests"
+      )
     })
     
     # Plotting requests over time ====
