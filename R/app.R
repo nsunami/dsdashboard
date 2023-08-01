@@ -5,6 +5,13 @@ source(here("R/load_data.R"))
 source(here("R/utils-pipe.R"))
 source(here("R/weekly_bar.R"))
 
+
+SKIP_LOGIN <- Sys.getenv("SKIP_LOGIN") |>
+  as.logical()
+if (is.na(SKIP_LOGIN)) {
+  SKIP_LOGIN <- FALSE
+}
+
 # EUR Corporate colors
 eur_pal <- list(
   deep_green = "#002328",
@@ -93,7 +100,11 @@ dashboard <- function(...) {
         font_scale = NULL, 
         bootswatch = "cosmo"
       ),
-    login_panel,
+    if (SKIP_LOGIN) {
+      overview_panel
+    } else {
+      login_panel
+    },
     )
   
   server <- function(input, output, session) {
