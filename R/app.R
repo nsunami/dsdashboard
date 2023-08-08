@@ -259,7 +259,7 @@ dashboard <- function(...) {
           y = ~req_type, 
           x = ~n,
           marker = list(color = eur_pal$bright_green),
-          hovertemplate = "We had %{y:.0f} requests about \"%{x}\" <extra></extra>"
+          hovertemplate = "We had %{x:.0f} requests about \"%{y}\" <extra></extra>"
         ) |> 
         plotly::layout(
           xaxis = list(
