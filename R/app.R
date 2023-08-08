@@ -175,8 +175,6 @@ dashboard <- function(...) {
         dplyr::filter(req_type %in% input$selectedTypes)
     })
     
-    # Weekly bar server function ====
-    weekly_bar_server("weeklyBar", requests)
     # Total Requests
     output$total_requests <- renderText({
       total_requests <- selected_requests() |>
