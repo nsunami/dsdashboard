@@ -195,17 +195,21 @@ dashboard <- function(...) {
           marker = list(color = eur_pal$bright_green),
           hovertemplate = "In the week of %{x}, we had %{y:.0f} requests<extra></extra>"
         ) |> 
-        plotly::layout(yaxis = list(title = FALSE,
-                                    fixedrange = TRUE)) |> 
+        plotly::layout(
+          yaxis = list(title = FALSE,
+                       fixedrange = TRUE)
+        ) |> 
         # Horizontal y-axis label 
-        plotly::add_annotations(xref = "paper",
-                                yref = "paper",
-                                x = 0,
-                                y = 1,
-                                showarrow = FALSE,
-                                yanchor = "bottom",
-                                xanchor = "right",
-                                text = "Requests") |>
+        plotly::add_annotations(
+          xref = "paper",
+          yref = "paper",
+          x = 0,
+          y = 1,
+          showarrow = FALSE,
+          yanchor = "bottom",
+          xanchor = "right",
+          text = "Requests"
+        ) |>
         plotly::layout(xaxis = list(title = "Week")) |>
         plotly::config(displayModeBar = FALSE)
     })
