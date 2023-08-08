@@ -101,11 +101,7 @@ dashboard <- function(...) {
         font_scale = NULL, 
         bootswatch = "cosmo"
       ),
-    if (SKIP_LOGIN) {
-      overview_panel
-    } else {
       login_panel
-    },
   )
   
   server <- function(input, output, session) {
@@ -123,16 +119,23 @@ dashboard <- function(...) {
       id = "logout",
       active = reactive(credentials()$user_auth)
     )
+    # Replace tabs for login
+    replace_tabs <- function(){
+      # remove the login tab
+      removeTab("navbar", "login")
+      # add home tab 
+      appendTab("navbar", overview_panel, select = TRUE)
+      appendTab("navbar", details_panel)
+      
+    }
     # Take care the post-login behavior
     observeEvent(credentials()$user_auth, {
       # if user logs in successfully
       if(credentials()$user_auth) { 
-        # remove the login tab
-        removeTab("navbar", "login")
-        # add home tab 
-        appendTab("navbar", overview_panel, select = TRUE)
+        replace_tabs()
       }
     })
+    if (SKIP_LOGIN) { replace_tabs() }
     
     # Theming =======
     # bs_themer()
