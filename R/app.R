@@ -74,8 +74,8 @@ dashboard <- function(...) {
       )
     ),
     layout_columns(
-      card(
-        plotly::plotlyOutput("requests_over_time"))
+      plotly::plotlyOutput("requests_over_time"),
+      plotly::plotlyOutput("requests_by_type")
     )
   )
   
@@ -101,7 +101,7 @@ dashboard <- function(...) {
         font_scale = NULL, 
         bootswatch = "cosmo"
       ),
-      login_panel
+    login_panel
   )
   
   server <- function(input, output, session) {
@@ -208,7 +208,31 @@ dashboard <- function(...) {
                                 text = "Requests") |>
         plotly::layout(xaxis = list(title = "Week")) |>
         plotly::config(displayModeBar = FALSE)
-      
+    })
+    
+    # Requests by type =======
+    output$requests_by_type <- plotly::renderPlotly({
+      requests |>
+        dplyr::count(req_type) |>
+        dplyr::arrange(n) |>
+        plotly::plot_ly() |> 
+        plotly::add_bars(
+          y = ~req_type, 
+          x = ~n,
+          marker = list(color = eur_pal$bright_green),
+          hovertemplate = "We had %{y:.0f} requests about \"%{x}\" <extra></extra>"
+        ) |> 
+        plotly::layout(
+          xaxis = list(
+            title = FALSE,
+            fixedrange = TRUE
+          ),
+          yaxis = list(
+            title = FALSE,
+            categoryorder = "sum ascending"
+          )
+        ) |> 
+        plotly::config(displayModeBar = FALSE)
     })
     
   }
