@@ -3,8 +3,6 @@ library(bslib)
 library(here)
 source(here("R/load_data.R"))
 source(here("R/utils-pipe.R"))
-source(here("R/weekly_bar.R"))
-
 
 SKIP_LOGIN <- Sys.getenv("SKIP_LOGIN") |>
   as.logical()
@@ -112,16 +110,6 @@ dashboard <- function(...) {
     )
   )
   
-  # UI Component - Details Panel ====
-  details_panel <- bslib::nav_panel(
-    title = "Details",
-    weekly_bar_UI("weeklyBar",
-                  date_range = date_range,
-                  uniques = uniques,
-                  requests = requests)
-  )
-  
-  
   # Put together the whole UI ====
   ui <- page_navbar(
     id = "navbar",
@@ -152,15 +140,15 @@ dashboard <- function(...) {
       id = "logout",
       active = reactive(credentials()$user_auth)
     )
+    
     # Replace tabs for login
     replace_tabs <- function(){
       # remove the login tab
       removeTab("navbar", "login")
       # add home tab 
       appendTab("navbar", overview_panel, select = TRUE)
-      appendTab("navbar", details_panel)
-      
     }
+    
     # Take care the post-login behavior
     observeEvent(credentials()$user_auth, {
       # if user logs in successfully
