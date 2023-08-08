@@ -1,7 +1,9 @@
 # Load requests dataset
 load_data <- function(path = "data/public/2022_requests_without_names_and_notes.csv"){
   ## Load dataset
-  requests_raw <- readr::read_csv2(here::here(path))
+  requests_raw <- readr::read_csv2(
+    here::here(path),
+    show_col_types = FALSE)
   
   # Fix date 
   requests_raw <- requests_raw |> 

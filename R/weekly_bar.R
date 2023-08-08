@@ -40,7 +40,7 @@ weekly_bar_UI <- function(id, date_range, uniques, requests) {
     ),
     card(
       full_screen = TRUE,
-      card_body_fill(
+      card_body(
         plotly::plotlyOutput(NS(id, "weeklyBar"))
       )
     )
