@@ -3,8 +3,6 @@ library(bslib)
 library(here)
 source(here("R/load_data.R"))
 source(here("R/utils-pipe.R"))
-source(here("R/weekly_bar.R"))
-
 
 SKIP_LOGIN <- Sys.getenv("SKIP_LOGIN") |>
   as.logical()
@@ -55,39 +53,62 @@ dashboard <- function(...) {
   overview_panel <- bslib::nav_panel(
     title = "Overview",
     h1("2022 Requests"),
-    layout_columns(
-      bslib::value_box(
-        title = "Total",
-        value = textOutput("total_requests"),
-        showcase = bsicons::bs_icon("check2-all")
+    card(
+      layout_sidebar(
+        sidebar = sidebar(
+          title = "Settings",
+          icon = bsicons::bs_icon("gear"),
+          # Dates selector
+          dateRangeInput(
+            "dateRange",
+            label = "Dates",
+            start = date_range[[1]],
+            end = date_range[[2]],
+            min = date_range[[1]],
+            max = date_range[[2]]
+          ),
+          # Faculty Selector
+          selectInput(
+            "selectedFaculty",
+            multiple = TRUE,
+            label = "Faculty", 
+            choices = uniques$faculty, 
+            selected = uniques$faculty
+          ),
+          # Type selector
+          selectInput(
+            "selectedTypes",
+            multiple = TRUE,
+            label = "Request Types", 
+            choices = uniques$req_type, 
+            selected = uniques$req_type
+          ),
+        ),
+        layout_columns(
+          bslib::value_box(
+            title = "Total",
+            value = textOutput("total_requests"),
+            showcase = bsicons::bs_icon("check2-all")
+          ),
+          bslib::value_box(
+            title = "Ave. weekly requests",
+            value = textOutput("weekly_average"),
+            showcase = bsicons::bs_icon("speedometer2")
+          ),
+          bslib::value_box(
+            title = "Busiest month",
+            value = textOutput("busiest_month"),
+            textOutput("busiest_month_requests"),
+            showcase = bsicons::bs_icon("stack")
+          )
+        ),
+        layout_columns(
+          plotly::plotlyOutput("requests_over_time"),
+          plotly::plotlyOutput("requests_by_type")
+        ),
       ),
-      bslib::value_box(
-        title = "Ave. weekly requests",
-        value = textOutput("weekly_average"),
-        showcase = bsicons::bs_icon("speedometer2")
-      ),
-      bslib::value_box(
-        title = "Busiest month",
-        value = textOutput("busiest_month"),
-        textOutput("busiest_month_requests"),
-        showcase = bsicons::bs_icon("stack")
-      )
-    ),
-    layout_columns(
-      plotly::plotlyOutput("requests_over_time"),
-      plotly::plotlyOutput("requests_by_type")
     )
   )
-  
-  # UI Component - Details Panel ====
-  details_panel <- bslib::nav_panel(
-    title = "Details",
-    weekly_bar_UI("weeklyBar",
-                  date_range = date_range,
-                  uniques = uniques,
-                  requests = requests)
-  )
-  
   
   # Put together the whole UI ====
   ui <- page_navbar(
@@ -119,15 +140,15 @@ dashboard <- function(...) {
       id = "logout",
       active = reactive(credentials()$user_auth)
     )
+    
     # Replace tabs for login
     replace_tabs <- function(){
       # remove the login tab
       removeTab("navbar", "login")
       # add home tab 
       appendTab("navbar", overview_panel, select = TRUE)
-      appendTab("navbar", details_panel)
-      
     }
+    
     # Take care the post-login behavior
     observeEvent(credentials()$user_auth, {
       # if user logs in successfully
@@ -140,40 +161,56 @@ dashboard <- function(...) {
     # Theming =======
     # bs_themer()
     
+    # Filter data based on the settings ====
+    selected_requests <- reactive({
+      requests |> 
+        # Filter by date
+        dplyr::filter(faculty %in% input$selectedFaculty) |> 
+        # Filter by date
+        dplyr::filter(
+          date > input$dateRange[[1]],
+          date < input$dateRange[[2]]
+        ) |>     
+        # Filter by request type
+        dplyr::filter(req_type %in% input$selectedTypes)
+    })
+    
     # Weekly bar server function ====
     weekly_bar_server("weeklyBar", requests)
     # Total Requests
     output$total_requests <- renderText({
-      total_requests <- requests |>
+      total_requests <- selected_requests() |>
         nrow()
       paste0(total_requests, " requests")
     })
     
     # Calculating weekly average ====
     output$weekly_average <- renderText({
-      weekly_average <- requests |>
+      weekly_average <- selected_requests() |>
         dplyr::count(week) |>
         dplyr::summarise(weekly_average = mean(n)) |>
         dplyr::pull()
-      
       scales::label_number(suffix = " per week")(weekly_average)
     })
     
     # Busiest Month ====
-    monthly_df <- requests |>
-      dplyr::mutate(month = lubridate::floor_date(date, "month")) |>
-      dplyr::count(month) |>
-      dplyr::arrange(desc(n)) 
+    monthly_df <- reactive({
+      selected_requests() |>
+        dplyr::mutate(month = lubridate::floor_date(date, "month")) |>
+        dplyr::count(month) |>
+        dplyr::arrange(desc(n)) 
+      
+    })
     
     output$busiest_month <- renderText({
-      monthly_df |>
+      monthly_df() |>
         dplyr::slice(1) |>
         dplyr::pull(month) |>
         format("%B")
     })
     
     output$busiest_month_requests <- renderText({
-      num_requests <- monthly_df |>
+      num_requests <- monthly_df() |>
         dplyr::slice(1) |>
         dplyr::pull(n)
       paste0(
@@ -185,7 +222,7 @@ dashboard <- function(...) {
     
     # Plotting requests over time ====
     output$requests_over_time <- plotly::renderPlotly({
-      requests |>
+      selected_requests() |>
         dplyr::group_by(week) |> 
         dplyr::count() |>
         plotly::plot_ly() |> 
@@ -195,24 +232,28 @@ dashboard <- function(...) {
           marker = list(color = eur_pal$bright_green),
           hovertemplate = "In the week of %{x}, we had %{y:.0f} requests<extra></extra>"
         ) |> 
-        plotly::layout(yaxis = list(title = FALSE,
-                                    fixedrange = TRUE)) |> 
+        plotly::layout(
+          yaxis = list(title = FALSE,
+                       fixedrange = TRUE)
+        ) |> 
         # Horizontal y-axis label 
-        plotly::add_annotations(xref = "paper",
-                                yref = "paper",
-                                x = 0,
-                                y = 1,
-                                showarrow = FALSE,
-                                yanchor = "bottom",
-                                xanchor = "right",
-                                text = "Requests") |>
+        plotly::add_annotations(
+          xref = "paper",
+          yref = "paper",
+          x = 0,
+          y = 1,
+          showarrow = FALSE,
+          yanchor = "bottom",
+          xanchor = "right",
+          text = "Requests"
+        ) |>
         plotly::layout(xaxis = list(title = "Week")) |>
         plotly::config(displayModeBar = FALSE)
     })
     
     # Requests by type =======
     output$requests_by_type <- plotly::renderPlotly({
-      requests |>
+      selected_requests() |>
         dplyr::count(req_type) |>
         dplyr::arrange(n) |>
         plotly::plot_ly() |> 
