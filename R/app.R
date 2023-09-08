@@ -2,7 +2,6 @@ library(shiny)
 library(bslib)
 library(here)
 source(here("R/load_data.R"))
-source(here("R/utils-pipe.R"))
 
 SKIP_LOGIN <- Sys.getenv("SKIP_LOGIN") |>
   as.logical()
